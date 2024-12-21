@@ -1,0 +1,39 @@
+setwd("C:/Users/ehtis/OneDrive - New Mexico State University/SUNNY/Research Projects/Mechanical Harvest Projects/Genomic Prediction/GWAS/Genotype")
+
+# Load required packages
+if (!requireNamespace("data.table", quietly = TRUE)) {
+  install.packages("data.table")
+}
+library(data.table)
+
+# Step 1: Load the HapMap file (working directory is already set)
+hapmap_file <- "GWAS128D_KNNimp_MAF.hmp.txt"  # Replace with your file name
+hapmap_data <- fread(hapmap_file)
+
+# Step 2: Calculate the proportion of missing data for each marker
+# Assume hapmap format: First 11 columns are metadata, genotype data starts at column 12
+metadata_cols <- 11
+genotype_data <- hapmap_data[, (metadata_cols + 1):ncol(hapmap_data)]
+
+# Replace common missing data placeholders ('NA', '-', or 'NN') with NA
+genotype_data[genotype_data == "-" | genotype_data == "NN"] <- NA
+
+# Calculate the proportion of missing data for each marker
+missing_proportions <- rowMeans(is.na(genotype_data))
+
+# Step 3: Filter markers with a missing data threshold
+missing_threshold <- 0.1  # Adjust this threshold as needed
+markers_to_keep <- missing_proportions <= missing_threshold
+
+# Subset the dataset to retain only markers below the threshold
+filtered_hapmap <- hapmap_data[markers_to_keep, ]
+
+# Step 4: Save the filtered HapMap file
+output_file <- "filtered_hapmap.hmp.txt"  # Specify the output file name
+fwrite(filtered_hapmap, output_file, sep = "\t")
+
+# Summary of the results
+cat("Total markers:", nrow(hapmap_data), "\n")
+cat("Markers removed:", sum(!markers_to_keep), "\n")
+cat("Markers retained:", nrow(filtered_hapmap), "\n")
+
